@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!--leaflet.css-->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin=""/>
+        <!--leaflet.js-->
+         <!-- Make sure you put this AFTER Leaflet's CSS -->
+        <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+        integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+        crossorigin=""></script>
+        <!--DateRange-->
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+        <!--MapBox-->
+        <script src="https://api.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.js"></script>
+        <link href="https://api.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.css" rel="stylesheet" />
+        <!-- Axios -->
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <!-- Marker Cluster -->
+        <script type="text/javascript" src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+        <!--style.CSS-->
+        <link rel="stylesheet" href="\static\style.css">
+    
+        <title>CalgaryBuildPermit.link</title>
+    </head>
+    <body>
+
+        <!--Website Header-->
+        <h1 class="head">Welcome to CalgaryBuildPermit.link</h1>
+
+        <!--Date Range Picker-->
+        <div>
+            Find Permits: 
+            <input type="text" name="daterange" value="" />
+        </div>
+
+        <!--MAP-->
+        <div id="mapid"></div>
+
+        <!--JAVA SKRIPP-->
+        <script type="text/javascript">
+            //initialize variables for permit details and their markers
+            var allpermits;
+            var markers = L.markerClusterGroup();
+            //create map
+            var mymap = L.map('mapid').setView([51.0447, -114.0719], 10);
+            //add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                maxZoom: 16,
+                id: 'mapbox/streets-v11',
+                tileSize: 512,
+                zoomOffset: -1,
+                accessToken: 'your.mapbox.access.token'
+            }).addTo(mymap);
+            
+            //retrieve date range, geojson file, display markers
+            $(function() {
+                $('input[name="daterange"]').daterangepicker({
+                    opens: 'left'
+                }, function(start, end, label) {
+                    
+                    //create request to API
+                    var query =  "issueddate > '" + start.format('YYYY-MM-DD') + "' and issueddate < '" + end.format('YYYY-MM-DD') + "'"
+                    axios.get("https://data.calgary.ca/resource/c2es-76ed.geojson",{
+                        params: {
+                            $where: query
+                        }
+                    })
+                    //store geojson file data in variable allpermits
+                    .then(function(allpermits){
+                    //Add Markers to Map after layer is cleared from previous use
+                    markers.clearLayers();
+                    //for each permit
+                    for (i=0; i<allpermits.data.features.length; i++){
+                        //permit is a feature of the geojson file containing all permits
+                        var permit = allpermits.data.features[i];
+                        var geo = permit.geometry;
+                        var issued = permit.properties.issueddate;
+                        var workclass = permit.properties.workclassgroup;
+                        var contractor = permit.properties.contractorname;
+                        var community =  permit.properties.communityname;
+                        var address = permit.properties.originaladdress;
+                        //check if coordinates exist, if not no marker will be created
+                        if (geo == null){
+                            continue;
+                        }
+                        //retreive coordinates from permit geometry property
+                        var north = permit.geometry.coordinates[1];
+                        var east = permit.geometry.coordinates[0];
+                        //create marker
+                        var marker = L.marker(new L.LatLng(north,east));
+                        //define text to display within popup
+                        marker.bindPopup("Issued Date: " + issued + "<br>" + "Work Class Group: " + workclass + "<br>" + "Contractor Name: " + contractor + "<br>" + "Community: " + community + "<br>" + "Original Address: " + address);
+                        markers.addLayer(marker);
+                    }   
+                    //add markers to mymap
+                    mymap.addLayer(markers);
+
+                    });
+                });
+            });
+
+            //Location on Click: unnecessary feature
+            var popup = L.popup();
+            function onMapClick(e) {
+                popup
+                .setLatLng(e.latlng)
+                .setContent(e.latlng.toString())
+                .openOn(mymap);
+            }
+            mymap.on('click', onMapClick);
+
+        </script>
+    </body>
+</html>
