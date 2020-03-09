@@ -75,11 +75,14 @@
                     })
                     //store geojson file data in variable allpermits
                     .then(function(allpermits){
+
                     //Add Markers to Map after layer is cleared from previous use
                     markers.clearLayers();
+
                     //for each permit
                     for (i=0; i<allpermits.data.features.length; i++){
-                        //permit is a feature of the geojson file containing all permits
+
+                        //each permit is a feature of the geojson file containing all permits
                         var permit = allpermits.data.features[i];
                         var geo = permit.geometry;
                         var issued = permit.properties.issueddate;
@@ -87,15 +90,19 @@
                         var contractor = permit.properties.contractorname;
                         var community =  permit.properties.communityname;
                         var address = permit.properties.originaladdress;
+
                         //check if coordinates exist, if not no marker will be created
                         if (geo == null){
                             continue;
                         }
+
                         //retreive coordinates from permit geometry property
                         var north = permit.geometry.coordinates[1];
                         var east = permit.geometry.coordinates[0];
+
                         //create marker
                         var marker = L.marker(new L.LatLng(north,east));
+
                         //define text to display within popup
                         marker.bindPopup("Issued Date: " + issued + "<br>" + "Work Class Group: " + workclass + "<br>" + "Contractor Name: " + contractor + "<br>" + "Community: " + community + "<br>" + "Original Address: " + address);
                         markers.addLayer(marker);
