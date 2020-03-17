@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -26,6 +27,7 @@
         <link rel="stylesheet" type="text/css" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
         <!--style.CSS-->
         <link rel="stylesheet" href="\static\style.css">
+
     
         <title>CalgaryBuildPermit.link</title>
     </head>
@@ -45,21 +47,44 @@
 
         <!--JAVA SKRIPP-->
         <script type="text/javascript">
-            //initialize variables for permit details and their markers
-            var allpermits;
-            var markers = L.markerClusterGroup();
-            //create map
-            var mymap = L.map('mapid').setView([51.0447, -114.0719], 10);
-            //add tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            //Roads layer 
+            var roads = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
                 maxZoom: 16,
                 id: 'mapbox/streets-v11',
                 tileSize: 512,
                 zoomOffset: -1,
-                accessToken: 'your.mapbox.access.token'
-            }).addTo(mymap);
-            
+            });
+
+            //Mapbox layer             
+            var traffic = L.tileLayer('https://api.mapbox.com/styles/v1/sebasianmapper/ck7v51lro05b81iqcdc2zkphj/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1Ijoic2ViYXNpYW5tYXBwZXIiLCJhIjoiY2s3bmw2d2V6MDE0NTNtcDZkano3NDNuaiJ9.4PhNi66A_sAecq8EBHsqyQ',{
+                attribution: '© <a href="https://apps.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 16,
+                id: 'ck7tlrb3l0hcv1iqm7l3lpa8y',
+                tileSize: 512,
+                zoomOffset: -1,
+                accessToken: 'pk.eyJ1Ijoic2ViYXNpYW5tYXBwZXIiLCJhIjoiY2s3bmw2d2V6MDE0NTNtcDZkano3NDNuaiJ9.4PhNi66A_sAecq8EBHsqyQ'
+            });
+
+            //create map
+            var mymap = L.map('mapid',{
+                center:[51.0447, -114.0719],
+                zoom: 10,
+                layers: [roads]
+            });
+            //create layers control
+            var maps = {
+                "Building Permits": roads,
+                "Traffic Incidents": traffic
+            };
+            L.control.layers(maps).addTo(mymap);
+
+
+
+            //initialize variables for permit details and their markers
+            var allpermits;
+            var markers = L.markerClusterGroup();
+
             //retrieve date range, geojson file, display markers
             $(function() {
                 $('input[name="daterange"]').daterangepicker({
@@ -108,21 +133,11 @@
                         markers.addLayer(marker);
                     }   
                     //add markers to mymap
-                    mymap.addLayer(markers);
+                    mymap.addLayer(markers); 
 
                     });
                 });
             });
-
-            //Location on Click: unnecessary feature
-            var popup = L.popup();
-            function onMapClick(e) {
-                popup
-                .setLatLng(e.latlng)
-                .setContent(e.latlng.toString())
-                .openOn(mymap);
-            }
-            mymap.on('click', onMapClick);
 
         </script>
     </body>
